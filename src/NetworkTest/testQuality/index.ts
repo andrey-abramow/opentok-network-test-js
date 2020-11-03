@@ -274,6 +274,16 @@ function checkSubscriberQuality(
               stats && onUpdate && onUpdate(updateStats(stats));
             };
 
+            const stopImmediate = () => {
+              session.on('sessionDisconnected', () => {
+                reject(new e.QualityTestError('stopped', ''));
+                session.off();
+              });
+              cleanSubscriber(session, subscriber)
+                .then(() => cleanPublisher(publisher))
+                .then(() => session.disconnect());
+            }
+
             const processResults = () => {
               const audioVideoResults: QualityTestResults = buildResults(builder);
               if (!audioOnly && !isAudioQualityAcceptable(audioVideoResults) && !stopTestCalled) {
@@ -297,7 +307,7 @@ function checkSubscriberQuality(
             };
 
             stopTest = () => {
-              processResults();
+              stopImmediate()
             };
 
             const resultsCallback: MOSResultsCallback = (state: MOSState) => {
